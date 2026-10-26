@@ -29,7 +29,9 @@ export function resolveVectorPopupSelection(current: Entity | undefined, candida
 }
 
 function present(value: unknown): boolean {
-  return value !== null && value !== undefined && !(typeof value === "number" && !Number.isFinite(value));
+  return value !== null && value !== undefined
+    && !(typeof value === "string" && value.trim() === "")
+    && !(typeof value === "number" && !Number.isFinite(value));
 }
 
 export function readVectorPopup(entity: Entity | undefined, time = JulianDate.now()) {

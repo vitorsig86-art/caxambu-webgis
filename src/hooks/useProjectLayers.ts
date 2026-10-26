@@ -12,7 +12,7 @@ export function useProjectLayers(viewer: Viewer | null, project: ProjectConfig, 
   const opacityRef = useRef(new Map<string, number>());
   const [rasterOpacities, setRasterOpacities] = useState<Record<string, number>>({});
   const visibleRef = useRef(visible);
-  const loadVisibleTilesRef = useRef<(() => void) | null>(null);
+  const loadVisibleLayersRef = useRef<(() => void) | null>(null);
   const terrainCutouts = useRef(new Map<string, ReturnType<typeof createModelTerrainCutout>>());
   visibleRef.current = visible;
   const comparisonRef = useRef(comparison);
@@ -35,7 +35,7 @@ export function useProjectLayers(viewer: Viewer | null, project: ProjectConfig, 
     loaded.current = resources;
     const unsubscribe: (() => void)[] = [];
     setMapWarning(null);
-    setStatuses(Object.fromEntries(project.layers.map((layer) => [layer.id, layer.source.format === "3d-tiles" ? "idle" : "loading"])));
+    setStatuses(Object.fromEntries(project.layers.map((layer) => [layer.id, layer.source.format === "3d-tiles" || layer.source.format === "geojson" ? "idle" : "loading"])));
     applyProjectCamera(viewer, project);
 
     const pendingTiles = new Set<string>();
@@ -97,15 +97,67 @@ export function useProjectLayers(viewer: Viewer | null, project: ProjectConfig, 
         })();
       }
     };
-    loadVisibleTilesRef.current = loadVisibleTiles;
-    loadVisibleTiles();
+    const pendingVectors = new Set<string>();
+    const failedVectors = new Set<string>();
+    const loadVisibleVectors = () => {
+      if (cancelled || viewer.isDestroyed()) return;
+      for (const definition of project.layers) {
+        if (definition.source.format !== "geojson") continue;
+        if (!visibleRef.current.has(definition.id)) {
+          failedVectors.delete(definition.id);
+          continue;
+        }
+        if (resources.has(definition.id) || pendingVectors.has(definition.id) || failedVectors.has(definition.id)) continue;
+        pendingVectors.add(definition.id);
+        setStatuses((current) => ({ ...current, [definition.id]: "loading" }));
+        void (async () => {
+          let pendingLayer: LoadedLayer | undefined;
+          try {
+            const layer = await loadLayer(definition);
+            pendingLayer = layer;
+            if (!(layer instanceof GeoJsonDataSource)) throw new Error("Expected a GeoJSON layer.");
+            if (cancelled || viewer.isDestroyed()) {
+              layer.entities.removeAll();
+              return;
+            }
+            setVectorVisibility(layer, false);
+            await attachLayer(viewer, layer);
+            if (cancelled || viewer.isDestroyed()) {
+              removeLayer(viewer, layer);
+              return;
+            }
+            resources.set(definition.id, layer);
+            if (definition.opacityControl) setVectorOpacity(layer, opacityRef.current.get(definition.id) ?? 1);
+            setVectorVisibility(layer, visibleRef.current.has(definition.id));
+            setStatuses((current) => ({ ...current, [definition.id]: "ready" }));
+            if (layer.show && definition.source.format === "geojson" && definition.source.autoZoom !== false) await viewer.zoomTo(layer);
+            if (!cancelled && !viewer.isDestroyed()) viewer.scene.requestRender();
+          } catch (cause) {
+            if (cancelled || viewer.isDestroyed()) return;
+            if (pendingLayer) removeLayer(viewer, pendingLayer);
+            resources.delete(definition.id);
+            if (visibleRef.current.has(definition.id)) failedVectors.add(definition.id);
+            console.error(`Unable to load layer ${definition.id}`, cause);
+            setStatuses((current) => ({ ...current, [definition.id]: "error" }));
+          } finally {
+            pendingVectors.delete(definition.id);
+          }
+        })();
+      }
+    };
+    const loadVisibleLayers = () => {
+      loadVisibleTiles();
+      loadVisibleVectors();
+    };
+    loadVisibleLayersRef.current = loadVisibleLayers;
+    loadVisibleLayers();
 
     // Sequential attachment preserves imagery stack order. React cleanup guards
     // late async results when a project changes or StrictMode remounts the app.
     void (async () => {
       for (const definition of project.layers) {
         if (cancelled || viewer.isDestroyed()) return;
-        if (definition.source.format === "3d-tiles") continue;
+        if (definition.source.format === "3d-tiles" || definition.source.format === "geojson") continue;
         let pendingLayer: LoadedLayer | undefined;
         try {
           const layer = await loadLayer(definition);
@@ -119,7 +171,6 @@ export function useProjectLayers(viewer: Viewer | null, project: ProjectConfig, 
           // Publish only attached layers so the toggle effect cannot expose one
           // while the attachment promise is pending.
           layer.show = isRaster ? false : visibleRef.current.has(definition.id);
-          if (layer instanceof GeoJsonDataSource) setVectorVisibility(layer, layer.show);
           if (definition.kind === "basemap" && layer instanceof ImageryLayer) {
             viewer.imageryLayers.add(layer, 0);
           } else {
@@ -132,7 +183,6 @@ export function useProjectLayers(viewer: Viewer | null, project: ProjectConfig, 
           resources.set(definition.id, layer);
           if (layer instanceof ImageryLayer) applyTemporalSplit(definition.id, layer);
           if (isRaster && layer instanceof ImageryLayer) layer.alpha = opacityRef.current.get(definition.id) ?? 1;
-          if (definition.opacityControl && layer instanceof GeoJsonDataSource) setVectorOpacity(layer, opacityRef.current.get(definition.id) ?? 1);
           if (layer instanceof ImageryLayer) {
             const handleTileError = createImageryTileErrorHandler(definition, setMapWarning, import.meta.env.DEV, layer.imageryProvider);
             unsubscribe.push(handleTileError.dispose);
@@ -160,10 +210,6 @@ export function useProjectLayers(viewer: Viewer | null, project: ProjectConfig, 
           }
           setStatuses((current) => ({ ...current, [definition.id]: isBasemapFallback(layer) ? "fallback" : "ready" }));
           if (isRaster) layer.show = visibleRef.current.has(definition.id);
-          if (layer instanceof GeoJsonDataSource && layer.show
-            && definition.source.format === "geojson" && definition.source.autoZoom !== false) {
-            await viewer.zoomTo(layer);
-          }
           if (!cancelled && !viewer.isDestroyed()) viewer.scene.requestRender();
         } catch (cause) {
           if (cancelled || viewer.isDestroyed()) return;
@@ -180,7 +226,7 @@ export function useProjectLayers(viewer: Viewer | null, project: ProjectConfig, 
 
     return () => {
       cancelled = true;
-      if (loadVisibleTilesRef.current === loadVisibleTiles) loadVisibleTilesRef.current = null;
+      if (loadVisibleLayersRef.current === loadVisibleLayers) loadVisibleLayersRef.current = null;
       if (!viewer.isDestroyed()) viewer.camera.cancelFlight();
       unsubscribe.forEach((remove) => remove());
       for (const cutout of terrainCutouts.current.values()) cutout.dispose();
@@ -202,7 +248,7 @@ export function useProjectLayers(viewer: Viewer | null, project: ProjectConfig, 
       if (layer instanceof GeoJsonDataSource) setVectorVisibility(layer, layer.show);
       terrainCutouts.current.get(id)?.setVisible(layer.show);
     }
-    loadVisibleTilesRef.current?.();
+    loadVisibleLayersRef.current?.();
     viewer.scene.requestRender();
   }, [viewer, visible, comparison]);
 

@@ -1,5 +1,6 @@
 import type { GeographicBounds, ProjectConfig, ProjectLayerConfig } from "./types";
 import { caxambuExperimentalClipping } from "./caxambuClipping";
+import { caxambuVectors } from "./caxambuVectors";
 
 // EDIT: illustrative W/S/E/N extent in degrees, not a property boundary.
 const bounds: GeographicBounds = [-1, -1, 1, 1];
@@ -113,7 +114,7 @@ export const templateProject: ProjectConfig = {
     roll: 359.9980013110771,
   },
   // Exemplos continuam excluídos da lista ativa.
-  layers: [basemap, ...caxambuRasters, {
+  layers: [basemap, ...caxambuRasters, ...caxambuVectors, {
     id: "photogrammetric-model", name: "Modelo fotogramétrico 3D", description: "Modelo fotogramétrico de Caxambu-MG", kind: "3d-tiles", group: "model",
     source: {
       format: "3d-tiles", source: "ion", assetId: 4131174, tokenEnv: "VITE_CESIUM_3D_TOKEN",
