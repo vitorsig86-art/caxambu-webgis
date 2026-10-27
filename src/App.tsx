@@ -8,6 +8,11 @@ import { VectorPopup } from "./components/VectorPopup";
 import { ModeSwitcher, type MapMode } from "./components/ModeSwitcher";
 import { DiagnosticJourney } from "./components/DiagnosticJourney";
 import { TemporalComparison } from "./components/TemporalComparison";
+import { SceneMode } from "cesium";
+import { SceneModeControl } from "./components/SceneModeControl";
+import { resolveTechnicalExperience } from "./experiences/technical";
+import { visibleForScene } from "./experiences/sceneVisibility";
+import { useSceneMode } from "./hooks/useSceneMode";
 import { configuredVisibility, isTemporalLayer } from "./projects/layerVisibility";
 
 import { useCesiumViewer } from "./hooks/useCesiumViewer";
@@ -22,6 +27,7 @@ function defaultVisibility(project: ProjectConfig) {
 
 export function App() {
   const project = projects[0];
+  const [experience] = useState(() => resolveTechnicalExperience(window.location.search));
   const [visible, setVisible] = useState(() => defaultVisibility(projects[0]));
   const [panelOpen, setPanelOpen] = useState(false);
   const [mode, setMode] = useState<MapMode>("explore");
@@ -42,11 +48,15 @@ export function App() {
     next.add(comparison.right);
     return next;
   }, [visible, comparison, project]);
-  const { containerRef, viewer, error } = useCesiumViewer(Boolean(project.developmentTools?.cameraCapture));
-  const { statuses, mapWarning, rasterOpacities, setRasterOpacity, getModel } = useProjectLayers(viewer, project, displayVisible, comparison);
+  const { containerRef, viewer, error } = useCesiumViewer(Boolean(project.developmentTools?.cameraCapture), experience.allow2D);
+  const sceneMode = useSceneMode(viewer, experience.allow2D);
+  const is2D = sceneMode.mode === SceneMode.SCENE2D;
+  const modelVisible = useMemo(() => visibleForScene(project.layers, displayVisible, is2D), [displayVisible, is2D, project]);
+  const { statuses, mapWarning, rasterOpacities, setRasterOpacity, getModel } = useProjectLayers(viewer, project, modelVisible, comparison);
   const legendLayers = project.layers.filter((layer) => layer.legend && layer.legendMode !== "embedded" && displayVisible.has(layer.id));
 
   function toggleLayer(id: string) {
+    if (is2D && project.layers.find(layer => layer.id === id)?.source.format === "3d-tiles") return;
     if (comparison && campaigns.some(layer => layer.id === id)) return;
     setVisible((current) => {
       const next = new Set(current);
@@ -77,16 +87,18 @@ export function App() {
   return (
     <main className="app-shell">
       <div ref={containerRef} className="map-container" aria-label="Mapa 3D interativo do projeto" />
+      {experience.allow2D && <SceneModeControl mode={sceneMode.mode} disabled={!viewer || Boolean(error) || sceneMode.mode === SceneMode.MORPHING} onChange={sceneMode.change} />}
       {comparison && viewer && <TemporalComparison viewer={viewer} layers={project.layers} selection={comparison}
         visible={displayVisible} statuses={statuses} rasterOpacities={rasterOpacities} drawerOpen={panelOpen}
         onChange={setComparison} onExit={() => setComparison(null)} />}
       <header className="app-header">
-        <a className="brand" href="/" aria-label="Página inicial do Cardeal Map Viewer">
+        <a className="brand" href="/?experience=technical" aria-label="Página inicial do Cardeal Map Viewer">
           <img src="/logo-cardeal.png" alt="" />
           <span><strong>CARDEAL</strong><span>Map Viewer</span></span>
         </a>
         <span className="header-divider" />
         <span className="header-context">Área de trabalho geoespacial</span>
+        <a href="/?experience=community" className="community-entry-link">Bairro Vivo</a>
         <button className="panel-toggle mobile-only" aria-expanded={panelOpen} aria-controls="layer-panel" onClick={() => setPanelOpen(!panelOpen)}>☰ <span>Camadas</span></button>
       </header>
       {diagnosticSteps.length > 0 && <ModeSwitcher mode={mode} onChange={changeMode} />}
@@ -94,7 +106,7 @@ export function App() {
         stepIndex={diagnosticStep} onStepChange={changeDiagnosticStep} onExplore={() => changeMode("explore")} />}
       {panelOpen && <button type="button" className="drawer-backdrop" aria-label="Fechar painel de camadas" onClick={() => setPanelOpen(false)} />}
       <aside id="layer-panel" aria-label="Área de trabalho e camadas" className={`layer-panel ${panelOpen ? "is-open" : ""}`}>
-        <LayerPanel project={project} statuses={statuses} visible={displayVisible} rasterOpacities={rasterOpacities} onOpacityChange={setRasterOpacity} onToggle={toggleLayer} onClose={() => setPanelOpen(false)}
+        <LayerPanel project={project} statuses={statuses} visible={modelVisible} is2D={is2D} rasterOpacities={rasterOpacities} onOpacityChange={setRasterOpacity} onToggle={toggleLayer} onClose={() => setPanelOpen(false)}
           scenes={project.scenes} onApplyScene={scene => { setMode("explore"); applyScene(scene.layerIds); }}
           comparing={Boolean(comparison)} onCompare={canCompare && viewer && !error ? () => {
             setMode("explore");
@@ -103,7 +115,7 @@ export function App() {
           } : undefined} onExitComparison={() => setComparison(null)} />
       </aside>
       <NavigationControls viewer={viewer} homeCamera={project.initialCamera} disabled={Boolean(error)} />
-      <MeasurementToolbar viewer={viewer} disabled={Boolean(error)} />
+      <MeasurementToolbar viewer={viewer} disabled={Boolean(error)} is2D={is2D} />
       <VectorPopup viewer={viewer} />
       {ModelDevelopmentTools && (project.developmentTools?.modelAlignment || project.developmentTools?.cropAuthoring) &&
         <Suspense fallback={null}>

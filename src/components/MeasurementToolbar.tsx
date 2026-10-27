@@ -10,14 +10,14 @@ const tools: { id: MeasurementTool; label: string; path: string; help: string }[
   { id: "height", label: "Diferença de cota", path: "M5 18h6M13 6h6M12 4v16m-3-3 3 3 3-3M9 7l3-3 3 3", help: "Selecione os pontos A e B para medir ΔZ = B − A." },
 ];
 
-export function MeasurementToolbar({ viewer, disabled = false }: { viewer: Viewer | null; disabled?: boolean }) {
+export function MeasurementToolbar({ viewer, disabled = false, is2D = false }: { viewer: Viewer | null; disabled?: boolean; is2D?: boolean }) {
   const measurements = useMeasurements(viewer);
   const unavailable = disabled || !measurements.ready || !viewer || viewer.isDestroyed();
   const selected = tools.find((tool) => tool.id === measurements.active);
   return (
     <section className="measurement-controls" aria-label="Medições">
       <div className="measurement-toolbar" role="group" aria-label="Ferramentas de medição">
-        {tools.map((tool) => <button key={tool.id} type="button" title={tool.label} aria-label={tool.label} aria-pressed={measurements.active === tool.id} disabled={unavailable} onClick={() => measurements.select(tool.id)}>
+        {tools.map((tool) => <button key={tool.id} type="button" title={is2D && tool.id === "height" ? "Diferença de cota disponível em 3D" : tool.label} aria-label={tool.label} aria-pressed={measurements.active === tool.id} disabled={unavailable || (is2D && tool.id === "height")} onClick={() => measurements.select(tool.id)}>
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d={tool.path} /></svg>
         </button>)}
         <button type="button" title="Limpar medições" aria-label="Limpar medições" disabled={unavailable} onClick={measurements.clear}>
@@ -30,7 +30,7 @@ export function MeasurementToolbar({ viewer, disabled = false }: { viewer: Viewe
         <p className="measurement-message" role="status">{measurements.message}</p>
         {measurements.pointCount > 0 && <span>{measurements.pointCount} ponto(s) · </span>}
         <span>{measurements.completed} medição(ões)</span>
-        <small>{selected?.id === "height" || measurements.result.startsWith("Cota A:")
+        <small>{is2D ? "Vista 2D: coordenadas e área sem altitude; distância geodésica horizontal WGS84. Cotas disponíveis em 3D." : selected?.id === "height" || measurements.result.startsWith("Cota A:")
           ? "Cotas: alturas elipsoidais WGS84 obtidas das posições cartesianas do Cesium, sem conversão geoidal. Referencial vertical do modelo não confirmado; sem garantia de precisão altimétrica absoluta. Horizontal: plano ENU no ponto médio (até 10 km). 3D: linha reta, sem acompanhar o relevo."
           : "Altitudes elipsoidais (m). Área horizontal geográfica, sem relevo."}</small>
         {selected && <div className="measurement-actions">

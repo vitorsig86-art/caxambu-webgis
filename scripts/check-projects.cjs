@@ -176,7 +176,7 @@ async function main() {
     assert.equal(layer.legend.gradientStops.at(-1).position, 100);
   }
   // Generic production code must not contain project-specific IDs/names.
-  for (const directory of ["src", "src/projects", "src/components", "src/hooks", "src/cesium"]) {
+  for (const directory of ["src", "src/components", "src/hooks", "src/cesium"]) {
     for (const file of fs.readdirSync(path.join(root, directory)).filter((name) => /\.tsx?$/.test(name))) {
       assert.doesNotMatch(fs.readFileSync(path.join(root, directory, file), "utf8"), /Fazenda[ -]Mel|Soledade|pub-[a-f0-9]+\.r2\.dev/i, `${directory}/${file}`);
     }

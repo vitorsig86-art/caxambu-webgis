@@ -7,13 +7,25 @@ const vm = require("node:vm");
 const ts = require("typescript");
 const { renderToStaticMarkup } = require("react-dom/server");
 const root = path.join(__dirname, "..");
+const slots = [];
+let cursor = 0;
+const react = {
+  ...require("react"),
+  useState(initial) {
+    const index = cursor++;
+    if (!(index in slots)) slots[index] = typeof initial === "function" ? initial() : initial;
+    return [slots[index], next => { slots[index] = typeof next === "function" ? next(slots[index]) : next; }];
+  },
+  useEffect() {},
+};
 
 function load(file) {
   const exports = {};
   const code = ts.transpileModule(fs.readFileSync(path.join(root, file), "utf8"), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX },
   }).outputText;
-  vm.runInNewContext(code, { exports, require: (name) => name.endsWith(".css") ? {} : require(name) });
+  vm.runInNewContext(code, { exports, require: (name) => name.endsWith(".css") ? {} : name === "react" && file.endsWith("LayerPanel.tsx") ? react : name.startsWith(".")
+    ? load(path.join(path.dirname(file), name + (fs.existsSync(path.join(root, path.dirname(file), name + ".ts")) ? ".ts" : ".tsx"))) : require(name) });
   return exports;
 }
 
@@ -28,19 +40,20 @@ const project = { ...templateProject, layers: [...templateProject.layers.filter(
 const { LayerPanel, getWorkspaceSections } = load("src/components/LayerPanel.tsx");
 const sections = getWorkspaceSections(project.layers);
 assert.equal(JSON.stringify(sections.map((section) => [section.title, section.layers.length])), JSON.stringify([
-  ["Mapa base", 1], ["Rasters", 2], ["Vetores", 1], ["Modelo 3D", 1],
+  ["Mapa base", 1], ["Modelo 3D", 1], ["Rasters", 2], ["Vetores", 1], ["Análise Macro", 0],
 ]));
 assert.equal(new Set(sections.flatMap((section) => section.layers.map((layer) => layer.id))).size, project.layers.length);
 let visible = new Set(project.layers.filter((layer) => layer.defaultVisible).map((layer) => layer.id));
 const opacities = {};
 const toggles = [];
 const opacityChanges = [];
-const render = () => LayerPanel({
+const render = () => { cursor = 0; return LayerPanel({
   project, visible, rasterOpacities: opacities,
+  statuses: {},
   onToggle: (id) => { toggles.push(id); if (visible.has(id)) visible.delete(id); else visible.add(id); },
   onOpacityChange: (id, value) => { opacityChanges.push([id, value]); opacities[id] = value; },
   onClose() {},
-});
+}); };
 const initialTree = render();
 const markup = renderToStaticMarkup(initialTree);
 assert.doesNotMatch(markup, /<select|<option/);
@@ -78,11 +91,16 @@ for (const layer of sections.find((section) => section.id === "raster").layers) 
   const updatedRow = elements(render()).find(({ node }) => node.key === layer.id).node;
   assert.match(renderToStaticMarkup(updatedRow), /65%/);
 }
-for (const layer of [...sections[0].layers, ...sections[2].layers, ...sections[3].layers]) {
+for (const layer of sections.filter(section => section.id !== "raster").flatMap(section => section.layers)) {
   const row = elements(render()).find(({ node }) => node.key === layer.id).node;
   assert.ok(!elements(row).some(({ node }) => node.type === "input" && node.props.type === "range"));
 }
 assert.match(renderToStaticMarkup(render()), /model-layer-card/);
+cursor = 0;
+const flatTree = LayerPanel({ project, statuses: {}, visible, rasterOpacities: {}, is2D: true, onToggle() {}, onOpacityChange() {}, onClose() {} });
+const modelRow = elements(flatTree).find(({ node }) => node.key === "model-example").node;
+assert.equal(elements(modelRow).find(({ node }) => node.props.type === "checkbox").node.props.disabled, true);
+assert.match(renderToStaticMarkup(modelRow), /Disponível no modo 3D/);
 const { Legend } = load("src/components/Legend.tsx");
 for (const layer of project.layers.filter(layer => layer.legend)) {
   assert.equal(Legend({ ...layer.legend, visibility: false }), null);

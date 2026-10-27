@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Cartesian2, Cartesian3, CustomDataSource, ScreenSpaceEventHandler, ScreenSpaceEventType, type Entity, type Viewer } from "cesium";
+import { Cartesian2, Cartesian3, CustomDataSource, SceneMode, ScreenSpaceEventHandler, ScreenSpaceEventType, type Entity, type Viewer } from "cesium";
 import { drawMeasurement, layoutHeightLabels } from "../cesium/measurementGraphics";
 import { decomposedHeight, measurementText, pickMeasurementPosition, pickHeightPosition, sameHeightSurface, type MeasurementTool } from "../cesium/measurementUtils";
 
@@ -76,7 +76,7 @@ export function useMeasurements(viewer: Viewer | null) {
       if (!active || !points.length) return;
       const preview = hover && Cartesian3.distance(points[points.length - 1], hover) > 0.001 ? [...points, hover] : points;
       let text: string;
-      try { text = measurementText(active, preview); }
+      try { text = measurementText(active, preview, viewer!.scene.mode === SceneMode.SCENE2D); }
       catch (error) {
         text = error instanceof Error ? error.message : "Área inválida.";
         if (active === "height") {
@@ -100,7 +100,7 @@ export function useMeasurements(viewer: Viewer | null) {
         setState((current) => ({ ...current, message: `Selecione pelo menos ${minimum} pontos.` })); return;
       }
       let text: string;
-      try { text = measurementText(active, points); }
+      try { text = measurementText(active, points, viewer!.scene.mode === SceneMode.SCENE2D); }
       catch (error) { setState((current) => ({ ...current, message: error instanceof Error ? error.message : "Medição inválida." })); return; }
       removeDraft();
       const finalized = drawMeasurement(source, active, points, text);
@@ -135,6 +135,10 @@ export function useMeasurements(viewer: Viewer | null) {
     }
     function select(tool: MeasurementTool) {
       if (!ready || disposed || viewer!.isDestroyed()) return;
+      if (viewer!.scene.mode === SceneMode.MORPHING) return;
+      if (tool === "height" && viewer!.scene.mode === SceneMode.SCENE2D) {
+        setState(current => ({ ...current, message: "Diferença de cota disponível somente em 3D." })); return;
+      }
       if (active === tool) { cancel(); return; }
       resetDraft(); removeHeight(); active = tool;
       // Suspend only Cesium's entity-tracking double-click while drawing; restore on exit.
@@ -187,6 +191,20 @@ export function useMeasurements(viewer: Viewer | null) {
       }
     }
     const api = { select, clear, finish, cancel };
+    // Never mix points captured before and after a projection change. Preserve
+    // completed results, including height diagrams, for the return to 3D.
+    const removeMorphStart = viewer.scene.morphStart.addEventListener(() => {
+      resetDraft(); active = null;
+      handler.removeInputAction(ScreenSpaceEventType.LEFT_CLICK);
+      handler.removeInputAction(ScreenSpaceEventType.LEFT_DOUBLE_CLICK);
+      handler.removeInputAction(ScreenSpaceEventType.MOUSE_MOVE);
+      restoreDoubleClick();
+      setState(current => ({ ...current, active: null, pointCount: 0, result: "", message: "Vista alterada. Selecione uma ferramenta para iniciar nova medição." }));
+    });
+    const removeMorphComplete = viewer.scene.morphComplete.addEventListener(() => {
+      heightGraphics.forEach(entity => { entity.show = viewer!.scene.mode === SceneMode.SCENE3D; });
+      render();
+    });
     actions.current = api;
     document.addEventListener("keydown", keydown);
     void viewer.dataSources.add(source).then(() => {
@@ -199,7 +217,7 @@ export function useMeasurements(viewer: Viewer | null) {
       if (!disposed) setState((current) => ({ ...current, message: "Não foi possível iniciar as medições." }));
     });
     return () => {
-      disposed = true; removeLabelLayout(); clearPending(); restoreDoubleClick();
+      disposed = true; removeLabelLayout(); removeMorphStart(); removeMorphComplete(); clearPending(); restoreDoubleClick();
       document.removeEventListener("keydown", keydown); handler.destroy();
       if (actions.current === api) actions.current = null;
       if (originalTabIndex === null) viewer.canvas.removeAttribute("tabindex");

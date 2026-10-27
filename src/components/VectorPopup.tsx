@@ -48,7 +48,7 @@ export function VectorPopup({ viewer }: { viewer: Viewer | null }) {
     if (!popup || !viewer || viewer.isDestroyed() || !popupRef.current) return;
     const element = popupRef.current;
     const shell = element.closest(".app-shell");
-    const controls = [...(shell?.querySelectorAll<HTMLElement>(".measurement-controls, .navigation-controls, .raster-legend-stack, .map-alert, .cesium-viewer-bottom") ?? [])];
+    const controls = [...(shell?.querySelectorAll<HTMLElement>(".measurement-controls, .navigation-controls, .scene-mode-control, .raster-legend-stack, .map-alert, .cesium-viewer-bottom") ?? [])];
     const position = () => {
       if (viewer.isDestroyed()) return;
       const map = viewer.canvas.getBoundingClientRect();

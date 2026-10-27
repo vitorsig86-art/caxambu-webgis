@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef } from "react";
-import { Cartesian2, Cartesian3, type Viewer } from "cesium";
+import { Cartesian2, Cartesian3, OrthographicOffCenterFrustum, SceneMode, type Viewer } from "cesium";
 import { createCameraView } from "../cesium/projectCamera";
 import { useGeolocation } from "../hooks/useGeolocation";
 import type { ProjectCameraConfig } from "../projects/types";
@@ -53,6 +53,15 @@ export function NavigationControls({ viewer, homeCamera, disabled = false }: Nav
     if (unavailable || !viewer) return;
     const { camera, scene } = viewer;
     camera.cancelFlight();
+    if (scene.mode === SceneMode.SCENE2D) {
+      const width = camera.frustum instanceof OrthographicOffCenterFrustum
+        ? (camera.frustum.right ?? 0) - (camera.frustum.left ?? 0) : camera.positionCartographic.height;
+      if (!Number.isFinite(width) || width <= 0) return;
+      if (closer) camera.zoomIn(width * 0.2);
+      else camera.zoomOut(width * 0.2);
+      scene.requestRender();
+      return;
+    }
     const orientation = { heading: camera.heading, pitch: camera.pitch, roll: camera.roll };
     const center = new Cartesian2(viewer.canvas.clientWidth / 2, viewer.canvas.clientHeight / 2);
     const ray = camera.getPickRay(center);

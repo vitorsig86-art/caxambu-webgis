@@ -1,4 +1,4 @@
-import { Cartesian2, Cartesian3, Cartographic, Cesium3DTileFeature, Cesium3DTileset, Ellipsoid, EllipsoidGeodesic, EllipsoidTerrainProvider, Matrix4, Transforms, Math as CesiumMath, type EntityCollection, type Viewer } from "cesium";
+import { Cartesian2, Cartesian3, Cartographic, Cesium3DTileFeature, Cesium3DTileset, Ellipsoid, EllipsoidGeodesic, EllipsoidTerrainProvider, Matrix4, SceneMode, Transforms, Math as CesiumMath, type EntityCollection, type Viewer } from "cesium";
 
 export type MeasurementTool = "coordinates" | "distance" | "area" | "height";
 
@@ -10,6 +10,14 @@ function validPosition(position: Cartesian3 | undefined): position is Cartesian3
 export function pickMeasurementPosition(viewer: Viewer, screen: Cartesian2): Cartesian3 | undefined {
   if (viewer.isDestroyed()) return undefined;
   const { scene, camera } = viewer;
+  if (scene.mode === SceneMode.MORPHING) return undefined;
+  if (scene.mode === SceneMode.SCENE2D) {
+    // Explicit planimetric capture, with no claim of terrain/model altitude.
+    try {
+      const position = camera.pickEllipsoid(screen, scene.globe.ellipsoid);
+      return validPosition(position) ? Cartesian3.clone(position) : undefined;
+    } catch { return undefined; }
+  }
   // Measurement graphics are translucent and do not write opaque scene depth.
   // Use rendered model/terrain depth first; never substitute a bare ellipsoid hit.
   if (scene.pickPositionSupported) {
@@ -41,6 +49,7 @@ export function sameHeightSurface(a: Cartesian3, b: Cartesian3): boolean {
 
 export function pickHeightPosition(viewer: Viewer, screen: Cartesian2, excluded: EntityCollection): Cartesian3 | undefined {
   if (viewer.isDestroyed()) return undefined;
+  if (viewer.scene.mode === SceneMode.SCENE2D || viewer.scene.mode === SceneMode.MORPHING) return undefined;
   const { scene, camera } = viewer;
   let depthPosition: Cartesian3 | undefined;
   let tileset: Cesium3DTileset | undefined;
@@ -212,13 +221,23 @@ export function geographicArea(points: readonly Cartesian3[]): number {
   return area;
 }
 
-export function measurementText(tool: MeasurementTool, points: readonly Cartesian3[]): string {
+export function measurementText(tool: MeasurementTool, points: readonly Cartesian3[], planimetric = false): string {
   if (!points.length) return "";
+  if (planimetric && tool === "height") throw new Error("Diferença de cota disponível somente em 3D.");
   if (tool === "coordinates") {
     const point = Cartographic.fromCartesian(points[0]);
+    if (planimetric) return `Latitude: ${CesiumMath.toDegrees(point.latitude).toFixed(7)}°\nLongitude: ${CesiumMath.toDegrees(point.longitude).toFixed(7)}°`;
     return `Latitude: ${CesiumMath.toDegrees(point.latitude).toFixed(7)}°\nLongitude: ${CesiumMath.toDegrees(point.longitude).toFixed(7)}°\nAltitude: ${point.height.toFixed(2)} m`;
   }
-  if (tool === "distance") return `Distância 3D: ${formatDistance(distance3D(points))}`;
+  if (tool === "distance") {
+    if (planimetric) {
+      const distance = points.slice(1).reduce((sum, point, index) => sum + new EllipsoidGeodesic(
+        Cartographic.fromCartesian(points[index]), Cartographic.fromCartesian(point), Ellipsoid.WGS84,
+      ).surfaceDistance, 0);
+      return `Distância horizontal: ${formatDistance(distance)}`;
+    }
+    return `Distância 3D: ${formatDistance(distance3D(points))}`;
+  }
   if (tool === "area") return points.length < 3 ? "Área: selecione pelo menos 3 pontos" : `Área horizontal: ${formatArea(geographicArea(points))}`;
   if (points.length < 2) return `Cota A: ${formatHeightNumber(Cartographic.fromCartesian(points[0], Ellipsoid.WGS84).height)} m\nOrigem A: ${heightOrigins.get(points[0])?.label ?? "Não registrada"}`;
   const { altitudeA, altitudeB, delta, horizontal, spatial, angle, slope } = decomposedHeight(points);

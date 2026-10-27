@@ -3,7 +3,7 @@ import { EllipsoidTerrainProvider, Terrain, type Viewer } from "cesium";
 import { createViewer } from "../cesium/createViewer";
 import { captureCamera } from "../cesium/captureCamera";
 
-export function useCesiumViewer(cameraCapture = false) {
+export function useCesiumViewer(cameraCapture = false, allow2D = false) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [viewer, setViewer] = useState<Viewer | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -12,7 +12,7 @@ export function useCesiumViewer(cameraCapture = false) {
     if (!containerRef.current) return;
     let instance: Viewer;
     try {
-      instance = createViewer(containerRef.current);
+      instance = createViewer(containerRef.current, allow2D);
       setViewer(instance);
     } catch (cause) {
       console.error("Cesium initialization failed", cause);
@@ -75,7 +75,7 @@ export function useCesiumViewer(cameraCapture = false) {
       unsubscribe();
       if (!instance.isDestroyed()) instance.destroy();
     };
-  }, [cameraCapture]);
+  }, [cameraCapture, allow2D]);
 
   return { containerRef, viewer, error };
 }

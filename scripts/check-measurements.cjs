@@ -16,7 +16,7 @@ function load(relativePath, dependencies, globals = {}) {
   return exports;
 }
 const utils = load("src/cesium/measurementUtils.ts", { cesium });
-const graphics = load("src/cesium/measurementGraphics.ts", { cesium });
+const graphics = load("src/cesium/measurementGraphics.ts", { cesium, "./measurementUtils": utils });
 
 assert.equal(utils.distance3D([new cesium.Cartesian3(0, 0, 0), new cesium.Cartesian3(3, 4, 0), new cesium.Cartesian3(3, 4, 12)]), 17);
 assert.equal(utils.formatDistance(999), "999.00 m");
@@ -103,7 +103,8 @@ async function main() {
   const viewer = {
     isDestroyed: () => false, canvas, dataSources, screenSpaceEventHandler: defaults,
     camera: { getPickRay: () => ({}) },
-    scene: { requestRender() {}, pickPositionSupported: true, pickPosition: (screen) => at(screen.x, screen.y, 100 + screen.x), globe: { pick: () => undefined } },
+    terrainProvider: new cesium.EllipsoidTerrainProvider(),
+    scene: { mode: cesium.SceneMode.SCENE3D, requestRender() {}, postRender: new cesium.Event(), morphStart: new cesium.Event(), morphComplete: new cesium.Event(), drillPick: () => [], pickPositionSupported: true, pickPosition: (screen) => at(screen.x, screen.y, 100 + screen.x), globe: { show: true, pick: () => undefined } },
   };
   const api = useMeasurements(viewer);
   const cleanup = effect();
@@ -125,18 +126,33 @@ async function main() {
   assert.equal(timers.size, 0);
   click(20); click(30); enter(); assert.equal(state.completed, 3, "Enter commits pending clicks");
   api.select("height"); click(10); click(30);
-  assert.equal(state.completed, 4); assert.match(state.result, /ΔZ \(B − A\): 20.00 m/);
+  assert.equal(state.completed, 4); assert.match(state.result, /ΔZ \(B − A\): 20,00 m/);
   api.select("area"); click(0, 0); click(100, 0); click(100, 100); click(0, 100); enter();
-  assert.equal(state.completed, 5); assert.match(state.result, /Área horizontal:/);
+  assert.equal(state.completed, 4, "Selecting another tool replaces the single height result"); assert.match(state.result, /Área horizontal:/);
   const finalizedCount = source.entities.values.length;
   api.select("distance"); click(40); flushTimers(); click(50);
   listeners.get("keydown")({ key: "Escape", target: canvas, preventDefault() {} });
-  flushTimers(); assert.equal(state.active, null); assert.equal(state.completed, 5);
+  flushTimers(); assert.equal(state.active, null); assert.equal(state.completed, 4);
   assert.equal(source.entities.values.length, finalizedCount, "ESC removes only incomplete graphics");
   assert.equal(defaults.getInputAction(cesium.ScreenSpaceEventType.LEFT_DOUBLE_CLICK), originalDoubleClick);
   api.clear(); assert.equal(source.entities.values.length, 0); assert.equal(state.completed, 0);
+  api.select("distance"); click(5); flushTimers();
+  viewer.scene.morphStart.raiseEvent();
+  assert.equal(state.active, null); assert.equal(state.pointCount, 0);
+  viewer.scene.mode = cesium.SceneMode.SCENE2D;
+  viewer.scene.morphComplete.raiseEvent();
+  viewer.camera.pickEllipsoid = screen => at(screen.x, screen.y);
+  api.select("height"); assert.equal(state.active, null); assert.match(state.message, /somente em 3D/);
+  api.select("distance"); click(0); click(100); enter();
+  assert.match(state.result, /Distância horizontal: 100.00 m/);
+  api.select("coordinates"); click(10);
+  assert.doesNotMatch(state.result, /Altitude/);
+  api.clear();
+  viewer.scene.mode = cesium.SceneMode.SCENE3D;
   assert.equal(project.entities.values.length, 1); assert.equal(dataSources.length, 2);
   cleanup(); assert.equal(dataSources.length, 1); assert.equal(handler.destroyed, true);
+  assert.equal(viewer.scene.morphStart.numberOfListeners, 0);
+  assert.equal(viewer.scene.morphComplete.numberOfListeners, 0);
   assert.equal(listeners.size, 0); assert.equal(timers.size, 0); assert.equal(attributes.has("tabindex"), false);
   useMeasurements(viewer); const disposeBeforeReady = effect(); disposeBeforeReady();
   await new Promise(setImmediate); assert.equal(dataSources.length, 1, "No late data source leak after early disposal");

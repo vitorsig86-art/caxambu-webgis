@@ -126,7 +126,12 @@ async function main() {
   handler({ x: 0, y: 0, level: 0, error: Error("opaque CORS/network") }); assert.equal(diagnostics, 3);
   handler.dispose(); assert.equal(provider.requestImage, requestImage);
   const { templateProject, thematicExamples } = load("src/projects/template.ts");
-  assert.equal(templateProject.layers.length, 1); assert.equal(thematicExamples.length, 3);
+  assert.ok(templateProject.layers.length > 1);
+  assert.equal(templateProject.layers.filter(layer => layer.kind === "basemap").length, 1);
+  assert.equal(new Set(templateProject.layers.map(layer => layer.id)).size, templateProject.layers.length);
+  assert.ok(templateProject.layers.every(layer => !layer.source.url?.includes("example.invalid")));
+  assert.ok(thematicExamples.every(example => !templateProject.layers.some(layer => layer.id === example.id)));
+  assert.equal(thematicExamples.length, 3);
   assert.ok(Object.values(templateProject.developmentTools).every(v => v === false));
   const app = fs.readFileSync(path.join(root, "src/App.tsx"), "utf8");
   assert.ok(app.includes("import.meta.env.DEV ? lazy"));

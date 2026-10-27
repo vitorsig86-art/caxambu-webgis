@@ -18,7 +18,9 @@ function load(file, dependencies = {}) {
 }
 
 const { templateProject, exampleLayers } = load("src/projects/template.ts");
-const project = { ...templateProject, layers: [...templateProject.layers.filter(layer => layer.kind === "basemap"), ...exampleLayers] };
+const project = { ...templateProject, layers: [...templateProject.layers.filter(layer => layer.kind === "basemap"), ...exampleLayers,
+  { ...exampleLayers.find(layer => layer.source.format === "3d-tiles"), id: "second-model" },
+] };
 const { loadLayer, attachLayer, assertImageryLayerReady } = load("src/cesium/loadLayer.ts");
 const rasters = project.layers.filter((layer) => layer.source.format === "tms");
 const terrain = new cesium.EllipsoidTerrainProvider();
@@ -98,9 +100,11 @@ async function checkHookOrdering() {
   });
   const hookProject = project;
   let visible = new Set();
+  let is2D = false;
+  const { visibleForScene } = load("src/experiences/sceneVisibility.ts");
   const render = () => {
     cursor = 0;
-    const result = useProjectLayers(viewer, hookProject, visible);
+    const result = useProjectLayers(viewer, hookProject, visibleForScene(hookProject.layers, visible, is2D));
     const scheduled = effects;
     effects = [];
     scheduled.forEach((effect) => effect());
@@ -178,6 +182,18 @@ async function checkHookOrdering() {
     render().setRasterOpacity(definition.id, 25);
     assert.equal(layer.alpha, undefined, "Vectors and 3D Tiles must not receive raster opacity");
   }
+  const selectedBefore2D = [...visible];
+  const modelDefinitions = project.layers.filter(layer => layer.source.format === "3d-tiles");
+  const instances = modelDefinitions.map(layer => created.get(layer.id));
+  is2D = true; render();
+  modelDefinitions.forEach(layer => assert.equal(created.get(layer.id).show, false));
+  assert.deepEqual([...visible], selectedBefore2D, "2D must preserve the saved selection");
+  is2D = false; render();
+  modelDefinitions.forEach((layer, index) => {
+    assert.equal(created.get(layer.id), instances[index]);
+    assert.equal(created.get(layer.id).show, true);
+    assert.equal(loadCounts.get(layer.id), 1, "Returning to 3D must reuse both tilesets");
+  });
   // Cleanup must also dispose of cached hidden layers.
   slots.forEach((slot) => slot?.cleanup?.());
   assert.equal(collection.length, 0);

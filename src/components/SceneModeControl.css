@@ -1,0 +1,10 @@
+.scene-mode-control { position: absolute; z-index: 3; top: calc(var(--header-height) + 12px); left: calc(var(--panel-width) + 12px); display: flex; align-items: center; gap: 4px; padding: 4px; border: 1px solid #dde4d9; border-radius: 6px; background: #fafbf7; }
+.scene-mode-control button { min-width: 44px; min-height: 40px; border: 0; border-radius: 4px; background: transparent; color: #21372c; }
+.scene-mode-control button[aria-pressed="true"] { background: #e2ebdb; font-weight: 600; }
+.scene-mode-control small { max-width: 180px; padding: 0 6px; font-size: 11px; }
+@media (max-width: 760px) {
+  .scene-mode-control { top: auto; bottom: calc(48px + env(safe-area-inset-bottom)); left: max(12px, env(safe-area-inset-left)); max-width: calc(100vw - 84px); }
+  .scene-mode-control button { min-height: 44px; }
+  .app-shell:has(.raster-legend-stack) .scene-mode-control small { display: none; }
+  .app-shell:has(.layer-panel.is-open) .scene-mode-control { visibility: hidden; }
+}

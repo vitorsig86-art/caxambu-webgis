@@ -1,0 +1,16 @@
+{
+  "id": "/?experience=community",
+  "name": "Caxambu Bairro Vivo",
+  "short_name": "Bairro Vivo",
+  "description": "Um olhar mais perto do seu bairro. Explore Caxambu e guarde ideias para cuidar da comunidade.",
+  "lang": "pt-BR",
+  "start_url": "/?experience=community",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f7f6ef",
+  "theme_color": "#234b3b",
+  "icons": [
+    { "src": "/icons/bairro-vivo-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/icons/bairro-vivo-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

@@ -13,6 +13,7 @@ interface Props {
   onToggle: (id: string) => void;
   onClose: () => void;
   comparing?: boolean;
+  is2D?: boolean;
   onCompare?: () => void;
   onExitComparison?: () => void;
   // Quick scenes are optional so the panel keeps rendering without them.
@@ -35,7 +36,7 @@ function sameLayerSet(current: Set<string>, expected: string[]) {
   return current.size === expected.length && expected.every((id) => current.has(id));
 }
 
-export function LayerPanel({ project, statuses, visible, rasterOpacities, onOpacityChange, onToggle, onClose, scenes, onApplyScene, comparing, onCompare, onExitComparison }: Props) {
+export function LayerPanel({ project, statuses, visible, rasterOpacities, onOpacityChange, onToggle, onClose, scenes, onApplyScene, comparing, onCompare, onExitComparison, is2D = false }: Props) {
   const [modelHint, setModelHint] = useState<string | null>(null);
   // Model and sections with an active layer start expanded. Later layer toggles must
   // not reopen or close a section behind the user's back, so this initializes once.
@@ -119,7 +120,7 @@ export function LayerPanel({ project, statuses, visible, rasterOpacities, onOpac
                     {layer.subsection && layer.subsection !== layers[index - 1]?.subsection && <h4 className="layer-subsection">{layer.subsection}</h4>}
                     <div className={`layer-card ${enabled ? "is-active" : ""} ${isModel ? "model-layer-card" : ""}`}>
                       <label className="layer-toggle">
-                        <input type="checkbox" checked={enabled} disabled={comparing && isTemporalLayer(layer)} onChange={() => {
+                        <input type="checkbox" checked={enabled} disabled={(is2D && isModel) || (comparing && isTemporalLayer(layer))} onChange={() => {
                           if (isModel) setModelHint(enabled ? null : layer.id);
                           onToggle(layer.id);
                         }} />
@@ -130,7 +131,7 @@ export function LayerPanel({ project, statuses, visible, rasterOpacities, onOpac
                         </span>}
                         <span className="layer-copy">
                           <strong title={embeddedLegend ? "Legenda incorporada ao mapa" : undefined}>{layer.name}</strong>
-                          {isModel && <small>Visualização tridimensional</small>}
+                          {isModel && <small>{is2D ? "Disponível no modo 3D" : "Visualização tridimensional"}</small>}
                           {embeddedLegend && enabled && <small className="embedded-legend-note">Legenda incorporada ao mapa</small>}
                         </span>
                       </label>
