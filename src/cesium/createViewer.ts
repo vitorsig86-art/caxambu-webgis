@@ -1,6 +1,6 @@
-import { Ion, Viewer } from "cesium";
+import { Ion, SceneMode, Viewer } from "cesium";
 
-export function createViewer(container: HTMLElement, allow2D = false): Viewer {
+export function createViewer(container: HTMLElement, allow2D = false, initialMode = SceneMode.SCENE3D): Viewer {
   Ion.defaultAccessToken = import.meta.env.VITE_CESIUM_ION_TOKEN?.trim() ?? "";
 
   return new Viewer(container, {
@@ -16,6 +16,7 @@ export function createViewer(container: HTMLElement, allow2D = false): Viewer {
     infoBox: false,
     selectionIndicator: false,
     scene3DOnly: !allow2D,
+    sceneMode: initialMode,
     requestRenderMode: true,
     maximumRenderTimeChange: Infinity,
   });

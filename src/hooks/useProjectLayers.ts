@@ -7,7 +7,7 @@ import { createModelTerrainCutout } from "../cesium/modelTerrainCutout";
 import type { LayerStatus, ProjectConfig, TemporalComparisonSelection } from "../projects/types";
 import { isTemporalLayer } from "../projects/layerVisibility";
 
-export function useProjectLayers(viewer: Viewer | null, project: ProjectConfig, visible: Set<string>, comparison: TemporalComparisonSelection | null = null) {
+export function useProjectLayers(viewer: Viewer | null, project: ProjectConfig, visible: Set<string>, comparison: TemporalComparisonSelection | null = null, manageCamera = true) {
   const loaded = useRef(new Map<string, LoadedLayer>());
   const opacityRef = useRef(new Map<string, number>());
   const [rasterOpacities, setRasterOpacities] = useState<Record<string, number>>({});
@@ -36,7 +36,7 @@ export function useProjectLayers(viewer: Viewer | null, project: ProjectConfig, 
     const unsubscribe: (() => void)[] = [];
     setMapWarning(null);
     setStatuses(Object.fromEntries(project.layers.map((layer) => [layer.id, layer.source.format === "3d-tiles" || layer.source.format === "geojson" ? "idle" : "loading"])));
-    applyProjectCamera(viewer, project);
+    if (manageCamera) applyProjectCamera(viewer, project);
 
     const pendingTiles = new Set<string>();
     const failedTiles = new Set<string>();
@@ -130,7 +130,7 @@ export function useProjectLayers(viewer: Viewer | null, project: ProjectConfig, 
             if (definition.opacityControl) setVectorOpacity(layer, opacityRef.current.get(definition.id) ?? 1);
             setVectorVisibility(layer, visibleRef.current.has(definition.id));
             setStatuses((current) => ({ ...current, [definition.id]: "ready" }));
-            if (layer.show && definition.source.format === "geojson" && definition.source.autoZoom !== false) await viewer.zoomTo(layer);
+            if (manageCamera && layer.show && definition.source.format === "geojson" && definition.source.autoZoom !== false) await viewer.zoomTo(layer);
             if (!cancelled && !viewer.isDestroyed()) viewer.scene.requestRender();
           } catch (cause) {
             if (cancelled || viewer.isDestroyed()) return;
@@ -235,7 +235,7 @@ export function useProjectLayers(viewer: Viewer | null, project: ProjectConfig, 
       resources.clear();
       if (!viewer.isDestroyed()) viewer.scene.requestRender();
     };
-  }, [viewer, project]);
+  }, [viewer, project, manageCamera]);
 
   useEffect(() => {
     if (!viewer || viewer.isDestroyed()) return;

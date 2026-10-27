@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import { EllipsoidTerrainProvider, Terrain, type Viewer } from "cesium";
+import { EllipsoidTerrainProvider, Terrain, type SceneMode, type Viewer } from "cesium";
 import { createViewer } from "../cesium/createViewer";
 import { captureCamera } from "../cesium/captureCamera";
 
-export function useCesiumViewer(cameraCapture = false, allow2D = false) {
+export function useCesiumViewer(cameraCapture = false, allow2D = false, initialView?: { mode: SceneMode; initialize: (viewer: Viewer) => void }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [viewer, setViewer] = useState<Viewer | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -12,7 +12,8 @@ export function useCesiumViewer(cameraCapture = false, allow2D = false) {
     if (!containerRef.current) return;
     let instance: Viewer;
     try {
-      instance = createViewer(containerRef.current, allow2D);
+      instance = createViewer(containerRef.current, allow2D, initialView?.mode);
+      initialView?.initialize(instance);
       setViewer(instance);
     } catch (cause) {
       console.error("Cesium initialization failed", cause);
@@ -75,7 +76,7 @@ export function useCesiumViewer(cameraCapture = false, allow2D = false) {
       unsubscribe();
       if (!instance.isDestroyed()) instance.destroy();
     };
-  }, [cameraCapture, allow2D]);
+  }, [cameraCapture, allow2D, initialView]);
 
   return { containerRef, viewer, error };
 }

@@ -97,3 +97,7 @@
   .bv-toast { left:25px; right:auto; max-width:330px; }
 }
 @media (prefers-reduced-motion:reduce) { .bv-sheet { animation:none; } }
+.bv-camera-capture { position:absolute; z-index:8; top:calc(155px + env(safe-area-inset-top)); left:15px; width:min(290px, calc(100vw - 95px)); max-height:45dvh; overflow:auto; padding:13px; background:#f7f6eff5; border:1px solid #cfd8c6; border-radius:14px; font-size:12px; }
+.bv-camera-capture p { font-size:11px; line-height:1.5; }
+.bv-camera-capture button { min-height:44px; width:100%; border:0; border-radius:8px; margin-top:6px; background:#234b3b; color:white; }
+.bv-camera-capture textarea { width:100%; min-height:125px; margin-top:8px; font:11px/1.5 monospace; }

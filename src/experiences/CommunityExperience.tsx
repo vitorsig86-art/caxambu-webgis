@@ -1,10 +1,9 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
-import { Cartesian2, Cartesian3, Cartographic, Math as CesiumMath, SceneMode } from "cesium";
+import { Cartesian2, Cartographic, Math as CesiumMath } from "cesium";
 import { projects } from "../projects";
 import { configuredVisibility } from "../projects/layerVisibility";
 import { useCesiumViewer } from "../hooks/useCesiumViewer";
 import { useProjectLayers } from "../hooks/useProjectLayers";
-import { useSceneMode } from "../hooks/useSceneMode";
 import { usePwa } from "../hooks/usePwa";
 import { NavigationControls } from "../components/NavigationControls";
 import { LayerPanel } from "../components/LayerPanel";
@@ -12,6 +11,7 @@ import { VectorPopup } from "../components/VectorPopup";
 import { Legend } from "../components/Legend";
 import { CommunityIcon as Icon } from "../components/CommunityIcon";
 import { pickMeasurementPosition } from "../cesium/measurementUtils";
+import { communityHomeCamera, communityInitialView } from "./communityCamera";
 import { draftCategories, readDrafts, writeDrafts, type LocalDraft } from "./localDrafts";
 import "./CommunityExperience.css";
 
@@ -27,11 +27,8 @@ export default function CommunityExperience() {
   const project = projects[0];
   const panelProject = useMemo(() => ({ ...project, layers: project.layers.filter(layer => layer.source.format !== "3d-tiles") }), [project]);
   const [visible, setVisible] = useState(() => configuredVisibility(project.layers, project.layers.filter(layer => layer.defaultVisible && layer.source.format !== "3d-tiles").map(layer => layer.id)));
-  const { containerRef, viewer, error } = useCesiumViewer(false, true);
-  const { statuses, mapWarning, rasterOpacities, setRasterOpacity } = useProjectLayers(viewer, project, visible);
-  const scene = useSceneMode(viewer, true);
-  const initialized = useRef(false);
-  const home = useRef<Cartesian3 | null>(null);
+  const { containerRef, viewer, error } = useCesiumViewer(false, true, communityInitialView);
+  const { statuses, mapWarning, rasterOpacities, setRasterOpacity } = useProjectLayers(viewer, project, visible, null, false);
   const [tab, setTab] = useState<Tab>("map");
   const [picking, setPicking] = useState(false);
   const [location, setLocation] = useState<[number, number] | undefined>();
@@ -54,17 +51,6 @@ export default function CommunityExperience() {
     try { setDrafts(readDrafts()); setStorageReady(true); }
     catch { setNotice("Os rascunhos locais não estão disponíveis. Nenhum dado foi alterado. Verifique o armazenamento do navegador."); }
   }, []);
-  useEffect(() => {
-    if (!viewer || initialized.current || scene.mode !== SceneMode.SCENE3D) return;
-    initialized.current = true;
-    const camera = viewer.camera;
-    const center = camera.pickEllipsoid(new Cartesian2(viewer.canvas.clientWidth / 2, viewer.canvas.clientHeight / 2), viewer.scene.globe.ellipsoid);
-    const point = center && Cartographic.fromCartesian(center);
-    if (point) home.current = Cartesian3.fromRadians(point.longitude, point.latitude, Math.max(800, Cartesian3.distance(camera.positionWC, center)));
-    scene.change(SceneMode.SCENE2D);
-    if (home.current) camera.setView({ destination: home.current });
-    viewer.scene.requestRender();
-  }, [viewer, scene.mode]);
   useEffect(() => {
     if (tab === "map") return;
     const sheet = sheetRef.current;
@@ -115,7 +101,7 @@ export default function CommunityExperience() {
     try { const next = drafts.filter(draft => draft.id !== id); writeDrafts(next); setDrafts(next); setNotice("Rascunho removido deste aparelho."); }
     catch { setNotice("Não foi possível remover o rascunho. Tente novamente."); }
   }
-  const homePosition = home.current && Cartographic.fromCartesian(home.current);
+  const homeCamera = communityHomeCamera(viewer?.canvas.clientWidth ?? window.innerWidth, viewer?.canvas.clientHeight ?? window.innerHeight);
 
   return <main className="community-shell">
     <div className="community-map" ref={containerRef} aria-label="Mapa interativo de Caxambu" inert={tab !== "map"} />
@@ -125,10 +111,7 @@ export default function CommunityExperience() {
       <a href="/?experience=technical" className="bv-technical" aria-label="Abrir WebGIS técnico">Técnico ↗</a>
     </header>
     <div className="bv-map-controls" inert={tab !== "map"}>
-      <NavigationControls viewer={viewer} homeCamera={homePosition ? {
-        longitude: CesiumMath.toDegrees(homePosition.longitude), latitude: CesiumMath.toDegrees(homePosition.latitude),
-        height: homePosition.height, heading: 0, pitch: -90, roll: 0,
-      } : project.initialCamera} disabled={Boolean(error)} />
+      <NavigationControls viewer={viewer} homeCamera={homeCamera} disabled={Boolean(error)} />
     </div>
     <div className="bv-map-intro" inert={tab !== "map"}><span className="bv-live-dot" /> Um olhar mais perto do seu bairro</div>
     {!pwa.online && <p className="bv-connectivity" role="status">Sem conexão. Rascunhos disponíveis; o mapa precisa de internet.</p>}
