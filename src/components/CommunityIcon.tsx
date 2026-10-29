@@ -7,6 +7,10 @@ const paths = {
   close: "m6 6 12 12M6 18 18 6",
   layers: "m12 3 10 5-10 5L2 8Zm-10 9 10 5 10-5M2 16l10 5 10-5",
   download: "M12 3v12m-5-5 5 5 5-5M4 17v4h16v-4",
+  check: "m5 12.5 4.5 4.5L19 7",
+  chevron: "m9 6 6 6-6 6",
+  back: "m15 6-6 6 6 6",
+  arrow: "M5 12h14m-6-6 6 6-6 6",
   pin: "M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 1 1 16 0ZM15 10a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z",
 };
 export function CommunityIcon({ name }: { name: keyof typeof paths }) {
