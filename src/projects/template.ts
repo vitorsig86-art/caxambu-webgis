@@ -60,7 +60,7 @@ const rasterBaseUrl = "https://pub-71273808da264f9aaf13a3c86a1f1a27.r2.dev";
 // Todos são imagens sobre o terreno; não fornecem altitude às medições.
 const caxambuRasters: ProjectLayerConfig[] = [
   {
-    id: "orthomosaic", name: "Ortomosaico RGB — Bairro 01", description: "Ortomosaico RGB do Bairro 01 de Caxambu-MG", kind: "orthomosaic", group: "raster",
+    id: "orthomosaic", name: "Ortomosaico RGB — Bairro Santo Antônio", description: "Ortomosaico RGB do Bairro 01 de Caxambu-MG", kind: "orthomosaic", group: "raster",
     source: {
       format: "tms", url: `${rasterBaseUrl}/orto/{z}/{x}/{reverseY}.png`, credit: "Caxambu-MG",
       bounds: orthomosaicBounds, minimumLevel: 11, maximumLevel: 20, tileWidth: 256, tileHeight: 256,
@@ -108,7 +108,7 @@ export const templateProject: ProjectConfig = {
   initialCamera: { longitude: -44.9308078, latitude: -21.9880758, height: 1305.0, heading: 171.86, pitch: -31.24, roll: 0.00 },
   // Exemplos continuam excluídos da lista ativa.
   layers: [basemap, ...caxambuRasters, ...caxambuVectors, {
-    id: "photogrammetric-model", name: "Modelo fotogramétrico 3D — Bairro 01", description: "Modelo fotogramétrico do Bairro 01 de Caxambu-MG", kind: "3d-tiles", group: "model",
+    id: "photogrammetric-model", name: "Modelo fotogramétrico 3D — Bairro Santo Antônio", description: "Modelo fotogramétrico do Bairro 01 de Caxambu-MG", kind: "3d-tiles", group: "model",
     source: {
       format: "3d-tiles", source: "ion", assetId: 4131174, tokenEnv: "VITE_CESIUM_3D_TOKEN",
       ...(caxambuExperimentalClipping ? { clipping: caxambuExperimentalClipping } : {}),

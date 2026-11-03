@@ -14,7 +14,7 @@ export const communityPlace = {
 // Nomes em língua de morador para o painel Explorar. IDs sem entrada mantêm o texto técnico.
 export const communityLayerCopy: Record<string, { name: string; description: string }> = {
   "basemap": { name: "Mapa de fundo", description: "Imagem de satélite com nomes de ruas" },
-  "orthomosaic": { name: "Foto aérea — Bairro 01", description: "Ortomosaico por drone, com telhados e ruas" },
+  "orthomosaic": { name: "Foto aérea — Bairro Santo Antônio", description: "Ortomosaico por drone, com telhados e ruas" },
   "mdt": { name: "Forma do terreno (MDT)", description: "O chão, sem casas nem árvores" },
   "mds": { name: "Superfície (MDS)", description: "O chão com tudo o que está sobre ele" },
   "slope": { name: "Declividade", description: "Onde a rua sobe mais forte" },
