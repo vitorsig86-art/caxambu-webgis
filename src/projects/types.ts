@@ -86,7 +86,8 @@ export interface VectorPopupAction {
   urlProperty?: string;
   // "overlay" (default) opens the page over the map; "tab" opens a new tab.
   target?: "overlay" | "tab";
-  // Overlay only: true flies to the feature, "home" to the Home view, false keeps the camera. Default true.
+  // Overlay only: false (default) keeps the camera, true flies to the feature,
+  // "home" flies to the opening (Home) view.
   flyTo?: boolean | "home";
   // Overlay only, on close: "keep" (default) puts the camera back exactly where it
   // was when the page opened, without animation; "home" jumps to the Home view.

@@ -20,6 +20,14 @@ Use two-space indentation, double-quoted imports, semicolons, PascalCase compone
 
 Do not place real property-specific defaults in the template. Configure exampleLayers before adding entries to the active layers list: invisible rasters/vectors are still loaded. Keep credentials out of commits; VITE_* values are browser visible. Never copy .env.local. Do not commit node_modules, dist, caches or verification artifacts. Do not initialize Git, push or rewrite history unless requested; if this template already has Git, review the diff before committing.
 
+## Páginas embutidas (popup actions)
+
+- Configure botões em `source.popup.actions` e as origens permitidas em `embeddedPages.allowedOrigins` (somente https, origem exata). Use apenas URLs ilustrativas no template.
+- `flyTo` em ações "overlay": `false` (padrão) mantém a câmera, `true` voa até a feição, `"home"` voa para a vista inicial com `flyToCameraSettled` (1,6 s). Voos usam `beginManagedFlight`.
+- Fechar o overlay não move a câmera; `onClose: "home"` é a única exceção, configurada explicitamente.
+- Simulação 3D: a câmera fica na mesma cena ao abrir e ao fechar. Não configure `flyTo` (nem `true`, nem `"home"`) em ações de simulação; mantenha os padrões `flyTo: false` e `onClose: "keep"`.
+- A lógica fica em `src/hooks/useEmbeddedPage.ts`; valide com `scripts/check-embedded-pages.cjs`.
+
 ## Cesium vector scalability and territorial accuracy
 
 - Before using experimental Cesium APIs, read docs/CESIUM_VECTOR_TILES_2026.md, the official documentation and the API/source for the exact installed version. Check package.json, package-lock.json and node_modules; the bundled skills use a 1.144 baseline and are not proof of runtime support. Never invent methods/options or treat a roadmap as shipped functionality.

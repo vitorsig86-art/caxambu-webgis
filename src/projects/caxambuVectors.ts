@@ -24,7 +24,7 @@ export const caxambuVectors: ProjectLayerConfig[] = [
           { property: "area_ha", label: "Área", decimals: 2, suffix: " ha" },
           { property: "perimetro_m", label: "Perímetro", decimals: 0, suffix: " m" },
         ],
-        actions: [{ label: "Entrar na simulação 3D", url: hortaSimulationUrl, flyTo: "home" }],
+        actions: [{ label: "Entrar na simulação 3D", url: hortaSimulationUrl }],
       },
     },
   },

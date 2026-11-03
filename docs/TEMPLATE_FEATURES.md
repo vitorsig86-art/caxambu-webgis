@@ -19,6 +19,12 @@ essas fontes mesmo assim. Configure e valide as fontes antes de incluí-las.
   Sem essa opção, `legend` mantém as imagens e gradientes externos existentes.
 - `source.popup` em GeoJSON preserva título, campos, rótulos, unidades e formatos
   numéricos configuráveis. Nenhum atributo de imóvel foi acrescentado.
+- `source.popup.actions`: botões que abrem uma página (`url` ou `urlProperty`)
+  sobre o mapa (`target: "overlay"`, padrão) ou em nova aba (`target: "tab"`).
+  Só aparecem URLs https cuja origem esteja em `embeddedPages.allowedOrigins`.
+  `flyTo` define a câmera ao abrir: `false` (padrão) mantém a câmera, `true` voa
+  até a feição e `"home"` voa para a vista inicial em 1,6 s. Fechar a página não
+  move a câmera; `onClose: "home"` é opcional e salta para a vista inicial.
 - Sliders continuam disponíveis para XYZ/TMS e vetores com `opacityControl`.
   Os estados do hook existente agora são apresentados no painel: carregamento,
   erro de inicialização e mapa base alternativo. Isso não representa progresso

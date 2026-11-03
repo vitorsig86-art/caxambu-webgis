@@ -40,6 +40,7 @@ assert.equal(popup.allowedPageUrl("https://sim.example.invalid/", ["not a url"])
 const config = { title: "Talhão", titleProperty: "label", fields: [], actions: [
   { label: "Entrar na simulação 3D", urlProperty: "simulation_url" },
   { label: "Nova aba", urlProperty: "simulation_url", target: "tab", flyTo: false },
+  { label: "Ver feição", urlProperty: "simulation_url", flyTo: true },
   { label: "Sem URL", urlProperty: "absent" },
   { label: "Fixa", url: "https://sim.example.invalid/fixed", flyTo: "home", onClose: "home" },
   { label: "Fixa de fora", url: "https://elsewhere.invalid/x" },
@@ -48,8 +49,9 @@ const plot = new cesium.Entity({ properties: { label: "A", simulation_url: "http
 popup.registerVectorPopup(plot, config);
 const read = popup.readVectorPopup(plot, cesium.JulianDate.now(), allowed);
 same(read.actions.map(a => [a.label, a.url, a.target, a.flyTo, a.onClose]), [
-  ["Entrar na simulação 3D", "https://sim.example.invalid/a", "overlay", true, "keep"],
+  ["Entrar na simulação 3D", "https://sim.example.invalid/a", "overlay", false, "keep"],
   ["Nova aba", "https://sim.example.invalid/a", "tab", false, "keep"],
+  ["Ver feição", "https://sim.example.invalid/a", "overlay", true, "keep"],
   ["Fixa", "https://sim.example.invalid/fixed", "overlay", "home", "home"],
 ]);
 assert.equal(popup.readVectorPopup(plot, cesium.JulianDate.now()).actions.length, 0, "default: no allowed origins");
@@ -74,7 +76,7 @@ for (const outcome of ["complete", "cancel"]) {
   });
 }
 
-// Horta comunitária: layer, GeoJSON, simulation URL, allowed origin and flyTo "home".
+// Horta comunitária: layer, GeoJSON, simulation URL, allowed origin and default flyTo (camera stays).
 const { templateProject: project } = load("src/projects/template.ts");
 const horta = project.layers.find(layer => layer.id === "area-horta");
 assert.ok(horta, "area-horta layer present");
@@ -86,7 +88,7 @@ same({ ...horta.source.style }, { stroke: "#7CC242", strokeWidth: 3, fill: "#7CC
 assert.equal(horta.source.popup.titleProperty, "nome");
 same(horta.source.popup.fields.map(f => [f.property, f.label, f.decimals, f.suffix]), [["area_ha", "Área", 2, " ha"], ["perimetro_m", "Perímetro", 0, " m"]]);
 const [action] = horta.source.popup.actions;
-same({ ...action }, { label: "Entrar na simulação 3D", url: "https://horta-comunitaria-3d.vercel.app/", flyTo: "home" });
+same({ ...action }, { label: "Entrar na simulação 3D", url: "https://horta-comunitaria-3d.vercel.app/" });
 same([...project.embeddedPages.allowedOrigins], ["https://horta-comunitaria-3d.vercel.app"]);
 assert.equal(popup.allowedPageUrl(action.url, project.embeddedPages.allowedOrigins), action.url, "simulation URL passes the allowlist");
 const feature = new cesium.Entity({ properties: { nome: "Horta comunitária agroflorestal", area_ha: 0.93, perimetro_m: 386 } });
@@ -94,7 +96,7 @@ popup.registerVectorPopup(feature, horta.source.popup);
 const hortaPopup = popup.readVectorPopup(feature, cesium.JulianDate.now(), project.embeddedPages.allowedOrigins);
 assert.equal(hortaPopup.title, "Horta comunitária agroflorestal");
 same(hortaPopup.fields.map(f => `${f.label}: ${f.value}`), ["Área: 0,93 ha", "Perímetro: 386 m"]);
-same(hortaPopup.actions.map(a => [a.target, a.flyTo]), [["overlay", "home"]]);
+same(hortaPopup.actions.map(a => [a.target, a.flyTo]), [["overlay", false]]);
 
 // Both experiences pass the allowlist and open the overlay; the iframe stays sandboxed.
 for (const file of ["src/App.tsx", "src/experiences/CommunityExperience.tsx"]) {
@@ -108,4 +110,4 @@ assert.match(overlay, /Voltar ao mapa/);
 assert.match(overlay, /Abrir em nova aba/);
 assert.match(overlay, /event\.key === "Escape"/);
 
-setTimeout(() => console.log("Embedded pages passed: URL policy, actions, managed flight, Horta comunitária layer/origin/flyTo home, overlay wiring and sandbox."));
+setTimeout(() => console.log("Embedded pages passed: URL policy, actions, managed flight, Horta comunitária layer/origin/default flyTo, overlay wiring and sandbox."));

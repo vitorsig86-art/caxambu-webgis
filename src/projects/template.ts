@@ -65,7 +65,7 @@ const caxambuRasters: ProjectLayerConfig[] = [
       format: "tms", url: `${rasterBaseUrl}/orto/{z}/{x}/{reverseY}.png`, credit: "Caxambu-MG",
       bounds: orthomosaicBounds, minimumLevel: 11, maximumLevel: 20, tileWidth: 256, tileHeight: 256,
     },
-    defaultVisible: true, opacityControl: true,
+    defaultVisible: false, opacityControl: true,
   },
   {
     id: "mdt", name: "Modelo Digital do Terreno (MDT)", description: "MDT como imagem temática; não fornece altitude às medições", kind: "dtm", group: "raster",
@@ -104,15 +104,8 @@ const caxambuRasters: ProjectLayerConfig[] = [
 export const templateProject: ProjectConfig = {
   id: "caxambu-mg", name: "Caxambu-MG", location: "Caxambu, Minas Gerais, Brasil", bounds: orthomosaicBounds,
   // Câmera definitiva capturada manualmente, compartilhada pela abertura e Home.
-  // Longitude, latitude e orientação em graus; altura em metros, sem arredondamento.
-  initialCamera: {
-    longitude: -44.93237230001976,
-    latitude: -22.00047743504755,
-    height: 1331.7059496372597,
-    heading: 3.72224507024631,
-    pitch: -30.182835770694805,
-    roll: 359.9980013110771,
-  },
+  // Longitude, latitude e orientação em graus; altura em metros (painel de captura).
+  initialCamera: { longitude: -44.9308078, latitude: -21.9880758, height: 1305.0, heading: 171.86, pitch: -31.24, roll: 0.00 },
   // Exemplos continuam excluídos da lista ativa.
   layers: [basemap, ...caxambuRasters, ...caxambuVectors, {
     id: "photogrammetric-model", name: "Modelo fotogramétrico 3D — Bairro 01", description: "Modelo fotogramétrico do Bairro 01 de Caxambu-MG", kind: "3d-tiles", group: "model",
@@ -120,7 +113,7 @@ export const templateProject: ProjectConfig = {
       format: "3d-tiles", source: "ion", assetId: 4131174, tokenEnv: "VITE_CESIUM_3D_TOKEN",
       ...(caxambuExperimentalClipping ? { clipping: caxambuExperimentalClipping } : {}),
     },
-    defaultVisible: false,
+    defaultVisible: true,
   }],
   // Optional UI has no data or presets in a fresh template.
   scenes: [],
@@ -148,7 +141,11 @@ export const thematicExamples: ProjectLayerConfig[] = [
         { property: "size", label: "Área", decimals: 2, suffix: " ha" },
         { property: "value_count", label: "Quantidade", format: "integer" },
         { property: "class_code", label: "Classe", prefix: "Código " },
-      ] },
+      ],
+      // Botão que abre uma página sobre o mapa; a origem precisa estar em
+      // embeddedPages.allowedOrigins. flyTo: false (padrão) mantém a câmera,
+      // true voa até a feição, "home" voa para a vista inicial.
+      actions: [{ label: "Abrir página", url: "https://example.invalid/pagina", flyTo: false }] },
     },
   },
   {

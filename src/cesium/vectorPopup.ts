@@ -73,7 +73,7 @@ export function readVectorPopup(entity: Entity | undefined, time = JulianDate.no
     }),
     actions: (config.actions ?? []).flatMap((action): VectorPopupActionLink[] => {
       const url = allowedPageUrl(action.url ?? (action.urlProperty ? properties[action.urlProperty] : undefined), allowedOrigins);
-      return url ? [{ label: action.label, url, target: action.target ?? "overlay", flyTo: action.flyTo ?? true, onClose: action.onClose ?? "keep" }] : [];
+      return url ? [{ label: action.label, url, target: action.target ?? "overlay", flyTo: action.flyTo ?? false, onClose: action.onClose ?? "keep" }] : [];
     }),
   };
 }

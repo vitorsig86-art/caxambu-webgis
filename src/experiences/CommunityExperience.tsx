@@ -71,7 +71,7 @@ export default function CommunityExperience() {
   const { containerRef, viewer, error } = useCesiumViewer(false, true, communityInitialView);
   const { statuses, mapWarning, rasterOpacities, setRasterOpacity } = useProjectLayers(viewer, project, visible, null, false);
   const pwa = usePwa();
-  // Popup actions fly to the Bairro Vivo Home, the same view as its Home button.
+  // Home view used only by popup actions configured with flyTo: "home".
   const { page, openPage, closePage } = useEmbeddedPage(viewer, () => communityHomeCamera(viewer?.canvas.clientWidth ?? window.innerWidth, viewer?.canvas.clientHeight ?? window.innerHeight));
 
   const [entered, setEntered] = useState(readEntered);

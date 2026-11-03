@@ -61,7 +61,7 @@ destroyed = true; assert.equal(control.change(cesium.SceneMode.SCENE2D), false);
 destroyed = false; control.dispose(); assert.equal(control.change(cesium.SceneMode.SCENE2D), false);
 
 const project = load("src/projects/template.ts").templateProject;
-assert.deepEqual(Array.from(project.layers.filter(l => l.defaultVisible), l => l.id), ["basemap", "orthomosaic", "area-horta"]);
+assert.deepEqual(Array.from(project.layers.filter(l => l.defaultVisible), l => l.id), ["basemap", "area-horta", "photogrammetric-model"]);
 const models = project.layers.filter(l => l.source.format === "3d-tiles");
 assert.deepEqual(Array.from(models, l => l.source.assetId), [4131174]);
 const clipping = load("src/cesium/modelClipping.ts");

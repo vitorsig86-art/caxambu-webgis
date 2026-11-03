@@ -23,6 +23,7 @@ import type { ProjectConfig, TemporalComparisonSelection } from "./projects/type
 
 const EmbeddedPageOverlay = lazy(() => import("./components/EmbeddedPageOverlay"));
 const ModelDevelopmentTools = import.meta.env.DEV ? lazy(() => import("./components/ModelDevelopmentTools")) : null;
+const CameraCapturePanel = import.meta.env.DEV ? lazy(() => import("./components/CameraCapturePanel")) : null;
 
 function defaultVisibility(project: ProjectConfig) {
   return configuredVisibility(project.layers, project.layers.filter((layer) => layer.defaultVisible).map((layer) => layer.id));
@@ -148,6 +149,9 @@ export function App() {
       <MeasurementToolbar viewer={viewer} disabled={Boolean(error)} is2D={is2D} />
       <VectorPopup viewer={viewer} allowedOrigins={project.embeddedPages?.allowedOrigins} onOpenPage={openPage} />
       {page && <Suspense fallback={null}><EmbeddedPageOverlay url={page.url} title={page.title} onClose={closePage} /></Suspense>}
+      {CameraCapturePanel && project.developmentTools?.cameraCapture && <Suspense fallback={null}>
+        <CameraCapturePanel viewer={viewer} scenes={project.scenes ?? []} hasLimit={false} ignoreLimits={false} onIgnoreLimitsChange={() => {}} />
+      </Suspense>}
       {ModelDevelopmentTools && (project.developmentTools?.modelAlignment || project.developmentTools?.cropAuthoring) &&
         <Suspense fallback={null}>
           {project.layers.filter(layer => layer.source.format === "3d-tiles" && visible.has(layer.id)).map(layer =>
