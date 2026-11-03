@@ -78,7 +78,23 @@ export interface ProjectLayerConfig {
   temporalCampaign?: { label: string; description: string; comparisonLabel?: string };
 }
 
+// Popup button that opens a page. Only https URLs whose exact origin is
+// listed in ProjectConfig.embeddedPages.allowedOrigins are offered.
+export interface VectorPopupAction {
+  label: string;
+  url?: string;
+  urlProperty?: string;
+  // "overlay" (default) opens the page over the map; "tab" opens a new tab.
+  target?: "overlay" | "tab";
+  // Overlay only: true flies to the feature, "home" to the Home view, false keeps the camera. Default true.
+  flyTo?: boolean | "home";
+  // Overlay only, on close: "keep" (default) puts the camera back exactly where it
+  // was when the page opened, without animation; "home" jumps to the Home view.
+  onClose?: "keep" | "home";
+}
+
 export interface VectorPopupConfig {
+  actions?: VectorPopupAction[];
   title?: string;
   titleProperty?: string;
   titlePrefix?: string;
@@ -124,6 +140,9 @@ export interface ProjectConfig {
   scenes?: QuickScene[];
   diagnostic?: { steps: DiagnosticStep[] };
   temporalComparison?: TemporalComparisonSelection;
+  // Origins allowed for popup actions (exact scheme + host + port, https only).
+  // Without it no action button is shown.
+  embeddedPages?: { allowedOrigins: string[] };
   developmentTools?: { modelAlignment?: boolean; cropAuthoring?: boolean; cameraCapture?: boolean };
 }
 

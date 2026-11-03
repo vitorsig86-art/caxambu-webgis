@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type FormEvent, type PointerEvent as ReactPointerEvent } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState, type CSSProperties, type FormEvent, type PointerEvent as ReactPointerEvent } from "react";
 import { Cartesian2, Cartographic, Math as CesiumMath } from "cesium";
 import { projects } from "../projects";
 import { configuredVisibility } from "../projects/layerVisibility";
@@ -7,6 +7,7 @@ import { communityCameraPreset } from "../projects/communityCamera";
 import { useCesiumViewer } from "../hooks/useCesiumViewer";
 import { useProjectLayers } from "../hooks/useProjectLayers";
 import { usePwa } from "../hooks/usePwa";
+import { useEmbeddedPage } from "../hooks/useEmbeddedPage";
 import { NavigationControls } from "../components/NavigationControls";
 import { LayerPanel } from "../components/LayerPanel";
 import { VectorPopup } from "../components/VectorPopup";
@@ -20,6 +21,8 @@ import { categoryStyle, type DraftCategory } from "./communityCategories";
 import { addAreaOutlines, brandMark, distanceMeters, flyToPoint, formatCoordinate, formatDistance, metersPerPixel, screenCenter, tileThumbnail } from "./communityMap";
 import { CommunityMarkers } from "./CommunityMarkers";
 import "./CommunityExperience.css";
+
+const EmbeddedPageOverlay = lazy(() => import("../components/EmbeddedPageOverlay"));
 
 type Screen = "map" | "detail" | "register" | "pick" | "form" | "success" | "community" | "explore";
 type LonLat = [number, number];
@@ -68,6 +71,8 @@ export default function CommunityExperience() {
   const { containerRef, viewer, error } = useCesiumViewer(false, true, communityInitialView);
   const { statuses, mapWarning, rasterOpacities, setRasterOpacity } = useProjectLayers(viewer, project, visible, null, false);
   const pwa = usePwa();
+  // Popup actions fly to the Bairro Vivo Home, the same view as its Home button.
+  const { page, openPage, closePage } = useEmbeddedPage(viewer, () => communityHomeCamera(viewer?.canvas.clientWidth ?? window.innerWidth, viewer?.canvas.clientHeight ?? window.innerHeight));
 
   const [entered, setEntered] = useState(readEntered);
   const [mapReady, setMapReady] = useState(false);
@@ -284,7 +289,8 @@ export default function CommunityExperience() {
 
     {!pwa.online && <p className="bv-connectivity" role="status">Sem conexão. Rascunhos disponíveis; o mapa precisa de internet.</p>}
     {(error || mapWarning) && <p className="bv-map-error" role="alert">{error || mapWarning}</p>}
-    {mapish && <VectorPopup viewer={viewer} />}
+    {mapish && <VectorPopup viewer={viewer} allowedOrigins={project.embeddedPages?.allowedOrigins} onOpenPage={openPage} />}
+    {page && <Suspense fallback={null}><EmbeddedPageOverlay url={page.url} title={page.title} onClose={closePage} /></Suspense>}
     {project.layers.filter(layer => layer.legend && layer.legendMode !== "embedded" && visible.has(layer.id)).map(layer => <Legend key={layer.id} {...layer.legend!} visibility />)}
 
     {screen === "pick" && <>

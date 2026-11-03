@@ -24,7 +24,7 @@ function load(file) {
   const code = ts.transpileModule(fs.readFileSync(path.join(root, file), "utf8"), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX },
   }).outputText;
-  vm.runInNewContext(code, { exports, require: (name) => name.endsWith(".css") ? {} : name === "react" && file.endsWith("LayerPanel.tsx") ? react : name.startsWith(".")
+  vm.runInNewContext(code, { exports, URL, require: (name) => name.endsWith(".css") ? {} : name === "react" && file.endsWith("LayerPanel.tsx") ? react : name.startsWith(".")
     ? load(path.join(path.dirname(file), name + (fs.existsSync(path.join(root, path.dirname(file), name + ".ts")) ? ".ts" : ".tsx"))) : require(name) });
   return exports;
 }

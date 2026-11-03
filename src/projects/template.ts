@@ -1,7 +1,6 @@
 import type { GeographicBounds, ProjectConfig, ProjectLayerConfig } from "./types";
 import { caxambuExperimentalClipping } from "./caxambuClipping";
-import { caxambuBairro02Clipping } from "./caxambuBairro02Clipping";
-import { caxambuVectors } from "./caxambuVectors";
+import { caxambuVectors, hortaSimulationUrl } from "./caxambuVectors";
 
 // EDIT: illustrative W/S/E/N extent in degrees, not a property boundary.
 const bounds: GeographicBounds = [-1, -1, 1, 1];
@@ -54,8 +53,6 @@ export const exampleLayers: ProjectLayerConfig[] = [{
 
 // Limites de cobertura dos XMLs fornecidos; não representam limites territoriais.
 const orthomosaicBounds: GeographicBounds = [-45.00000000, -22.10599880, -44.82421875, -21.94304553];
-// Mesma grade XML do Bairro 01; não implica a mesma cobertura efetiva de imagens.
-const orthomosaicBairro02Bounds: GeographicBounds = [-45.00000000, -22.10599880, -44.82421875, -21.94304553];
 const thematicBounds: GeographicBounds = [-45.00000000, -22.59372606, -44.29687500, -21.94304553];
 const rasterBaseUrl = "https://pub-71273808da264f9aaf13a3c86a1f1a27.r2.dev";
 
@@ -69,14 +66,6 @@ const caxambuRasters: ProjectLayerConfig[] = [
       bounds: orthomosaicBounds, minimumLevel: 11, maximumLevel: 20, tileWidth: 256, tileHeight: 256,
     },
     defaultVisible: true, opacityControl: true,
-  },
-  {
-    id: "orthomosaic-bairro-02", name: "Ortomosaico RGB — Bairro 02", description: "Ortomosaico RGB do Bairro 02 de Caxambu-MG", kind: "orthomosaic", group: "raster",
-    source: {
-      format: "tms", url: `${rasterBaseUrl}/orto2/{z}/{x}/{reverseY}.png`, credit: "Caxambu-MG",
-      bounds: orthomosaicBairro02Bounds, minimumLevel: 11, maximumLevel: 20, tileWidth: 256, tileHeight: 256,
-    },
-    defaultVisible: false, opacityControl: true,
   },
   {
     id: "mdt", name: "Modelo Digital do Terreno (MDT)", description: "MDT como imagem temática; não fornece altitude às medições", kind: "dtm", group: "raster",
@@ -132,18 +121,12 @@ export const templateProject: ProjectConfig = {
       ...(caxambuExperimentalClipping ? { clipping: caxambuExperimentalClipping } : {}),
     },
     defaultVisible: false,
-  }, {
-    id: "photogrammetric-model-bairro-02", name: "Modelo fotogramétrico 3D — Bairro 02", description: "Modelo fotogramétrico do Bairro 02 de Caxambu-MG", kind: "3d-tiles", group: "model",
-    // Coleção própria criada pelo loader, preservada nas alternâncias de visibilidade.
-    source: {
-      format: "3d-tiles", source: "ion", assetId: 4143059, tokenEnv: "VITE_CESIUM_3D_TOKEN",
-      ...(caxambuBairro02Clipping ? { clipping: caxambuBairro02Clipping } : {}),
-    },
-    defaultVisible: false,
   }],
   // Optional UI has no data or presets in a fresh template.
   scenes: [],
   diagnostic: { steps: [] },
+  // Páginas que os popups podem abrir sobre o mapa (simulação 3D da horta comunitária).
+  embeddedPages: { allowedOrigins: [new URL(hortaSimulationUrl).origin] },
   // temporalComparison: { left: "configured-period-a", right: "configured-period-b" },
   // Add temporalCampaign to configured XYZ/TMS overlays to show the selector.
   developmentTools: { modelAlignment: false, cropAuthoring: false, cameraCapture: false },

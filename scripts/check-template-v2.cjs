@@ -16,7 +16,7 @@ function modules(dependencies = {}, env = {}, globals = {}) {
     const code = ts.transpileModule(fs.readFileSync(path.join(root, file), "utf8").replaceAll("import.meta.env", "__env"), {
       compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
     }).outputText;
-    vm.runInNewContext(code, { exports, __env: env, console, structuredClone, setTimeout, clearTimeout, ...globals,
+    vm.runInNewContext(code, { exports, URL, __env: env, console, structuredClone, setTimeout, clearTimeout, ...globals,
       require: name => dependencies[name] ?? (name.startsWith(".") ? load(path.normalize(path.join(path.dirname(file), name + ".ts"))) : require(name)),
     });
     return exports;

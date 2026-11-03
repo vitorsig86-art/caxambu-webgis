@@ -1,10 +1,10 @@
 .community-shell {
-  --bv-deep:#14302a; --bv-green:#1e4636; --bv-moss:#dfe6cc; --bv-quartz:#f4f2ea; --bv-card:#fbfaf5; --bv-ink:#17241d;
-  --bv-muted:#4f5b53; --bv-quiet:#5b675e; --bv-line:#dcdccf; --bv-glass:rgba(244,242,234,.93);
+  --bv-deep:#14302a; --bv-green:#1e4636; --bv-moss:#dfe6cc; --bv-quartz:var(--color-bg); --bv-card:var(--color-neutral-100); --bv-ink:var(--color-text);
+  --bv-muted:var(--color-neutral-700); --bv-quiet:var(--color-neutral-700); --bv-line:var(--color-divider); --bv-glass:rgba(244,242,234,.93);
   --bv-natureza:oklch(0.6 0.12 150); --bv-natureza-ink:oklch(0.42 0.1 150); --bv-natureza-soft:oklch(0.93 0.04 150);
-  --bv-terra:oklch(0.6 0.13 45); --bv-terra-ink:oklch(0.46 0.12 45); --bv-terra-soft:oklch(0.93 0.04 45);
+  --bv-terra:var(--color-accent); --bv-terra-ink:var(--color-accent-700); --bv-terra-soft:var(--color-accent-100);
   --bv-agua:oklch(0.6 0.12 235); --bv-agua-ink:oklch(0.44 0.1 235); --bv-agua-soft:oklch(0.93 0.03 235);
-  --bv-sans:'Atkinson Hyperlegible', system-ui, sans-serif; --bv-display:'Bricolage Grotesque', var(--bv-sans); --bv-mono-font:'IBM Plex Mono', ui-monospace, monospace;
+  --bv-sans:var(--font-body); --bv-display:var(--font-heading); --bv-mono-font:'IBM Plex Mono', ui-monospace, monospace;
   --bv-top:calc(12px + env(safe-area-inset-top)); --bv-dock-bottom:calc(20px + env(safe-area-inset-bottom));
   position:relative; width:100%; height:100%; height:100dvh; overflow:hidden; color:var(--bv-ink); background:#c9cdbd;
   font-family:var(--bv-sans); -webkit-font-smoothing:antialiased;

@@ -16,7 +16,7 @@ function modules(dependencies = {}, search = "", globals = {}) {
     const code = ts.transpileModule(fs.readFileSync(path.join(root, file), "utf8").replaceAll("import.meta.env", "({})"), {
       compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
     }).outputText;
-    vm.runInNewContext(code, { exports, console, URLSearchParams, window: { location: { search } }, ...globals,
+    vm.runInNewContext(code, { exports, console, URL, URLSearchParams, window: { location: { search } }, ...globals,
       require: name => dependencies[name] ?? (name.startsWith(".") ? load(path.join(path.dirname(file), name + ".ts")) : require(name)),
     });
     return exports;
@@ -29,7 +29,7 @@ assert.equal(resolveTechnicalExperience("").allow2D, false);
 assert.equal(resolveTechnicalExperience("?sceneModes=on").allow2D, true);
 assert.equal(resolveTechnicalExperience("?sceneModes=off").allow2D, false);
 let options;
-const factory = modules({ cesium: { Ion: {}, Viewer: class { constructor(_container, value) { options = value; } } } })("src/cesium/createViewer.ts");
+const factory = modules({ cesium: { Ion: {}, SceneMode: cesium.SceneMode, Viewer: class { constructor(_container, value) { options = value; } } } })("src/cesium/createViewer.ts");
 factory.createViewer({}); assert.equal(options.scene3DOnly, true);
 factory.createViewer({}, true); assert.equal(options.scene3DOnly, false);
 assert.equal(options.sceneModePicker, false); assert.equal(options.requestRenderMode, true);
@@ -61,17 +61,14 @@ destroyed = true; assert.equal(control.change(cesium.SceneMode.SCENE2D), false);
 destroyed = false; control.dispose(); assert.equal(control.change(cesium.SceneMode.SCENE2D), false);
 
 const project = load("src/projects/template.ts").templateProject;
-assert.deepEqual(Array.from(project.layers.filter(l => l.defaultVisible), l => l.id), ["basemap", "orthomosaic"]);
+assert.deepEqual(Array.from(project.layers.filter(l => l.defaultVisible), l => l.id), ["basemap", "orthomosaic", "area-horta"]);
 const models = project.layers.filter(l => l.source.format === "3d-tiles");
-assert.deepEqual(Array.from(models, l => l.source.assetId), [4131174, 4143059]);
+assert.deepEqual(Array.from(models, l => l.source.assetId), [4131174]);
 const clipping = load("src/cesium/modelClipping.ts");
 const collections = models.map(l => clipping.createModelClipping(l.source.clipping));
-assert.notEqual(collections[0], collections[1]);
 for (const c of collections) { assert.equal(c.inverse, true); assert.equal(c.length, 1); }
-assert.equal(collections[0].get(0).length, 5); assert.equal(collections[1].get(0).length, 6);
-assert.equal(modules({}, "?clipping3d-bairro02=off")("src/projects/template.ts").templateProject.layers.find(l => l.source.assetId === 4143059).source.clipping, undefined);
-assert.ok(modules({}, "?clipping3d-bairro02=off")("src/projects/template.ts").templateProject.layers.find(l => l.source.assetId === 4131174).source.clipping);
-assert.ok(modules({}, "?clipping3d=off")("src/projects/template.ts").templateProject.layers.find(l => l.source.assetId === 4143059).source.clipping);
+assert.equal(collections[0].get(0).length, 5);
+assert.equal(modules({}, "?clipping3d=off")("src/projects/template.ts").templateProject.layers.find(l => l.source.assetId === 4131174).source.clipping, undefined);
 // Cesium 1.146 collections own no GPU resources; destroy() is deprecated.
 
 const utils = load("src/cesium/measurementUtils.ts");
@@ -90,7 +87,7 @@ flat.scene.globe.show = true;
 flat.scene.drillPick = () => [{ primitive: {} }];
 assert.equal(utils.pickHeightPosition(flat, new cesium.Cartesian2(), new cesium.EntityCollection()), undefined);
 assert.equal(terrainPicks, 0, "Detected 3D object without depth must block terrain substitution");
-console.log("Scene modes passed: opt-in policy, unchanged default Viewer, repeated 2D/3D transitions and camera restoration, disposal, two independent clipping collections/diagnostics, initial states, 2D picking and no silent height fallback.");
+console.log("Scene modes passed: opt-in policy, unchanged default Viewer, repeated 2D/3D transitions and camera restoration, disposal, model clipping/diagnostics, initial states, 2D picking and no silent height fallback.");
 
 // Synthetic GPS fixes only: never request the user's real location during tests.
 let effect, fix, cleared = 0, gpsState, flight;

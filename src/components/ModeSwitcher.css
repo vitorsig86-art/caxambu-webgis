@@ -5,9 +5,9 @@
   z-index: 3;
   display: flex;
   padding: 3px;
-  border: 1px solid #d7dfd3;
+  border: 1px solid var(--color-divider);
   border-radius: 9px;
-  background: #fafbf7;
+  background: var(--color-neutral-100);
   box-shadow: 0 2px 8px #13281c12;
 }
 
@@ -17,12 +17,12 @@
   border: 0;
   border-radius: 6px;
   background: transparent;
-  color: #53674f;
+  color: var(--color-neutral-700);
   font-size: 12px;
   touch-action: manipulation;
 }
 
-.mode-switcher button[aria-pressed="true"] { background: #dfe9d3; color: #274a36; font-weight: 650; }
+.mode-switcher button[aria-pressed="true"] { background: var(--color-accent-2-100); color: var(--color-text); font-weight: 650; }
 
 @media (max-width: 760px) {
   .mode-switcher { top: calc(var(--header-height) + 60px); right: auto; left: max(8px, env(safe-area-inset-left)); z-index: 1; }

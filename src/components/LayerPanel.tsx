@@ -12,6 +12,8 @@ interface Props {
   onOpacityChange: (id: string, percent: number) => void;
   onToggle: (id: string) => void;
   onClose: () => void;
+  sheetHigh?: boolean;
+  onToggleSheetHeight?: () => void;
   comparing?: boolean;
   is2D?: boolean;
   onCompare?: () => void;
@@ -36,7 +38,7 @@ function sameLayerSet(current: Set<string>, expected: string[]) {
   return current.size === expected.length && expected.every((id) => current.has(id));
 }
 
-export function LayerPanel({ project, statuses, visible, rasterOpacities, onOpacityChange, onToggle, onClose, scenes, onApplyScene, comparing, onCompare, onExitComparison, is2D = false }: Props) {
+export function LayerPanel({ project, statuses, visible, rasterOpacities, onOpacityChange, onToggle, onClose, sheetHigh = false, onToggleSheetHeight, scenes, onApplyScene, comparing, onCompare, onExitComparison, is2D = false }: Props) {
   const [modelHint, setModelHint] = useState<string | null>(null);
   // Model and sections with an active layer start expanded. Later layer toggles must
   // not reopen or close a section behind the user's back, so this initializes once.
@@ -67,6 +69,11 @@ export function LayerPanel({ project, statuses, visible, rasterOpacities, onOpac
 
   return (
     <>
+      {onToggleSheetHeight && <button type="button" className="panel-sheet-handle mobile-only"
+        aria-label={sheetHigh ? "Reduzir painel para altura média" : "Expandir painel de camadas"}
+        aria-pressed={sheetHigh} onClick={onToggleSheetHeight}>
+        <span aria-hidden="true" />
+      </button>}
       <div className="panel-heading workspace-project">
         <div>
           <h2>{project.name}</h2>

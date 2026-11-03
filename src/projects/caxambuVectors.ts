@@ -6,7 +6,28 @@ const vectorBaseUrl = "https://pub-71273808da264f9aaf13a3c86a1f1a27.r2.dev/geojs
 // Source attributes (including ELEVATION) remain intact; no vertical offset or
 // survey datum transformation is applied. Ground lines classify terrain and
 // compatible 3D Tiles through Cesium's default ClassificationType.BOTH.
+// Simulação 3D da horta comunitária agroflorestal, aberta pelo popup da área.
+// A origem precisa estar em templateProject.embeddedPages.allowedOrigins.
+export const hortaSimulationUrl = "https://horta-comunitaria-3d.vercel.app/";
+
 export const caxambuVectors: ProjectLayerConfig[] = [
+  {
+    id: "area-horta", name: "Horta comunitária", description: "Área de estudo da horta comunitária agroflorestal, com simulação 3D", kind: "vector", group: "vector",
+    defaultVisible: true, opacityControl: true,
+    source: {
+      format: "geojson", url: `${vectorBaseUrl}/horta_area_estudo_wgs84.geojson`, autoZoom: false,
+      // Mesmo estilo da área de estudo do Ivan e do Jurema, em verde-folha.
+      style: { stroke: "#7CC242", strokeWidth: 3, fill: "#7CC242", fillOpacity: 0.18, clampToGround: true, zIndex: 25 },
+      popup: {
+        titleProperty: "nome",
+        fields: [
+          { property: "area_ha", label: "Área", decimals: 2, suffix: " ha" },
+          { property: "perimetro_m", label: "Perímetro", decimals: 0, suffix: " m" },
+        ],
+        actions: [{ label: "Entrar na simulação 3D", url: hortaSimulationUrl, flyTo: "home" }],
+      },
+    },
+  },
   {
     id: "contours-3m", name: "Curvas de nível — 3 m", description: "Curvas de nível do levantamento por drone, com equidistância de 3 m", kind: "contours", group: "vector",
     defaultVisible: false,

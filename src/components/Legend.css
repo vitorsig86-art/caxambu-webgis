@@ -99,3 +99,11 @@
 @media (max-width: 760px) and (prefers-reduced-motion: reduce) {
   .raster-legend { transition: none; }
 }
+/* Style the legend frame, never the thematic image or its colors. */
+.raster-legend { background: var(--color-neutral-100); color: var(--color-text); font-family: var(--font-body); border: 1px solid var(--color-divider); border-radius: var(--radius-sm); box-shadow: var(--shadow-md); }
+.raster-legend.raster-legend-image { border: 0; border-radius: var(--radius-sm); overflow: hidden; }
+.raster-legend-mark { background: var(--color-text); }
+@media (max-width: 760px) {
+  .app-shell .raster-legend-stack { --legend-bottom: calc(var(--bar-height) + 48px); }
+  .raster-legend:focus-visible { outline-color: var(--color-accent-700); }
+}

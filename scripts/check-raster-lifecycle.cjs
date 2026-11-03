@@ -13,7 +13,7 @@ function load(file, dependencies = {}) {
   const code = ts.transpileModule(fs.readFileSync(path.join(root, file), "utf8").replaceAll("import.meta.env", "({})").replaceAll("import.meta.env.DEV", "false"), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
   }).outputText;
-  vm.runInNewContext(code, { exports, setTimeout, clearTimeout, structuredClone, require: (name) => dependencies[name] ?? (name.startsWith(".") ? load(path.join(path.dirname(file), name + ".ts"), dependencies) : require(name)), console });
+  vm.runInNewContext(code, { exports, URL, setTimeout, clearTimeout, structuredClone, require: (name) => dependencies[name] ?? (name.startsWith(".") ? load(path.join(path.dirname(file), name + ".ts"), dependencies) : require(name)), console });
   return exports;
 }
 
